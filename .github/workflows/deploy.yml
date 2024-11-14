@@ -17,6 +17,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -29,6 +34,11 @@ jobs:
       with:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+    
+    - name: Build application
+      run: |
+        npm install
+        npm run build
     
     - name: Deploy to EC2
       env:
@@ -44,8 +54,5 @@ jobs:
           else
             git pull origin ${{ github.ref_name }}
           fi &&
-          export NODE_ENV=${NODE_ENV} &&
-          npm install &&
-          npm run build &&
           pm2 restart your-app-name-${NODE_ENV}
         "
