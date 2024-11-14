@@ -45,13 +45,6 @@ jobs:
         NODE_ENV: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.EC2_HOST }} "
-          # Ensure pm2 is installed
-          if ! command -v pm2 &> /dev/null; then
-            echo 'Installing pm2...' &&
-            npm install -g pm2
-          fi &&
-          
-          # Deploy application
           sudo mkdir -p /app &&
           sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} /app &&
           cd /app &&
@@ -61,5 +54,5 @@ jobs:
           else
             git pull origin ${{ github.ref_name }}
           fi &&
-          pm2 restart your-app-name-${NODE_ENV}
+          sudo systemctl restart nextjs
         "
