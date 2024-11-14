@@ -2,10 +2,16 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ main ]  # or your default branch
+    branches: 
+      - main
+      - staging
 
 jobs:
   deploy:
+    name: Deploy to EC2
+    environment: # This will dynamically select the environment
+      name: ${{ github.ref_name == 'main' ? 'Prod' : 'staging' }}
+    
     runs-on: ubuntu-latest
     
     steps:
@@ -25,11 +31,13 @@ jobs:
         known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
     
     - name: Deploy to EC2
+      env:
+        NODE_ENV: ${{ github.ref_name == 'main' ? 'Prod' : 'staging' }}
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.EC2_HOST }} '
-          cd /app &&
-          git pull origin main &&
+          export NODE_ENV=${{ env.NODE_ENV }} &&
+          git pull origin ${{ github.ref_name }} &&
           npm install &&
           npm run build &&
-          pm2 restart seb-blog
+          pm2 restart your-app-name-${{ env.NODE_ENV }}
         ' 
