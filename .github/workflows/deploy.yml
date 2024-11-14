@@ -10,7 +10,7 @@ jobs:
   deploy:
     name: Deploy to EC2
     environment: # This will dynamically select the environment
-        NODE_ENV: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
+      name: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
     
     runs-on: ubuntu-latest
     
