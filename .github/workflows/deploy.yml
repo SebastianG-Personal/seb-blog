@@ -32,12 +32,12 @@ jobs:
     
     - name: Deploy to EC2
       env:
-        NODE_ENV: ${{ github.ref_name == 'main' ? 'Prod' : 'staging' }}
+        NODE_ENV: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.EC2_HOST }} '
-          export NODE_ENV=${{ env.NODE_ENV }} &&
+          export NODE_ENV=${NODE_ENV} &&
           git pull origin ${{ github.ref_name }} &&
           npm install &&
           npm run build &&
-          pm2 restart your-app-name-${{ env.NODE_ENV }}
+          pm2 restart your-app-name-${NODE_ENV}
         ' 
