@@ -34,20 +34,17 @@ jobs:
       env:
         NODE_ENV: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
       run: |
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.EC2_HOST }} '
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.EC2_HOST }} "
           mkdir -p /app &&
           cd /app &&
-          if [ ! -d ".git" ]; then
+          if [ ! -d '.git' ]; then
             git clone https://github.com/${{ github.repository }} . &&
             git checkout ${{ github.ref_name }}
           else
-            export NODE_ENV=${NODE_ENV} &&
             git pull origin ${{ github.ref_name }}
-          fi &&'
+          fi &&
           export NODE_ENV=${NODE_ENV} &&
-          cd /app &&
-          git pull origin ${{ github.ref_name }} &&
           npm install &&
           npm run build &&
           pm2 restart your-app-name-${NODE_ENV}
-        ' 
+        "
