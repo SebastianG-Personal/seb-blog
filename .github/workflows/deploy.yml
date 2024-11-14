@@ -36,6 +36,7 @@ jobs:
       run: |
         ssh ${{ secrets.SSH_USER }}@${{ secrets.EC2_HOST }} '
           export NODE_ENV=${NODE_ENV} &&
+          cd /app &&
           git pull origin ${{ github.ref_name }} &&
           npm install &&
           npm run build &&
