@@ -1,72 +1,35 @@
-name: Deploy to EC2
+name: Deploy
 
 on:
   push:
-    branches: 
-      - main
-      - staging
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy to EC2
-    environment: # This will dynamically select the environment
-      name: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
-    
     runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      
-    - name: Configure AWS credentials
+
+    - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
-    
-    - name: Terraform Init
-      working-directory: .deploy/terraform
-      run: terraform init
-      
-    - name: Terraform Plan
-      working-directory: .deploy/terraform
-      run: terraform plan
-      env:
-        TF_VAR_environment: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
-        
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
-      working-directory: .deploy/terraform
-      run: terraform apply -auto-approve
-      env:
-        TF_VAR_environment: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
+        aws-region: us-east-1
 
-    - name: Install SSH key
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
-    
-    - name: Build application
-      run: |
-        npm install
-        npm run build
-    
-    - name: Deploy to EC2
-      env:
-        NODE_ENV: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
-      run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.EC2_HOST }} '\
-          sudo mkdir -p /app && \
-          sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} /app && \
-          cd /app && \
-          if [ ! -d ".git" ]; then \
-            git clone https://github.com/${{ github.repository }} . && \
-            git checkout ${{ github.ref_name }}; \
-          else \
-            git pull origin ${{ github.ref_name }}; \
-          fi && \
-          sudo systemctl restart nextjs'
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+
+    # Your deployment steps here...
+
+    - name: Terraform Destroy
+      if: always()  # This ensures destroy runs even if previous steps fail
+      run: terraform destroy -auto-approve
