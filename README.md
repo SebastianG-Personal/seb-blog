@@ -1,4 +1,8 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Notes
+- Secrets configured in Github Secrets
+- Deploy managed from Github Workflows and Terraform
+
 
 ## Getting Started
 
