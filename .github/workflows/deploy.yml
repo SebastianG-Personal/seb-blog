@@ -1,35 +1,51 @@
-name: Deploy
-
+name: Publish to GitHub Pages
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+      - name: Setup Node.js ⚙️ - Cache dependencies ⚡ - Install dependencies 🔧
+        uses: ./.github/workflows/setup-node
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
+      - name: Setup Pages ⚙️
+        uses: actions/configure-pages@v4
+        with:
+          static_site_generator: next
 
-    - name: Terraform Init
-      run: terraform init
+      - name: Build with Next.js 🏗️
+        run: npx next build
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve
+      - name: Upload artifact 📡
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
 
-    # Your deployment steps here...
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
-    - name: Terraform Destroy
-      if: always()  # This ensures destroy runs even if previous steps fail
-      run: terraform destroy -auto-approve
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Publish to GitHub Pages 🚀
+        id: deployment
+        uses: actions/deploy-pages@v4
