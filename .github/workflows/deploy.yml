@@ -25,10 +25,36 @@ jobs:
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | head -n1
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | base64 --decode > ~/.ssh/id_rsa
+          # Debug: Check if secret is empty
+          if [ -z "${{ secrets.EC2_SSH_PRIVATE_KEY }}" ]; then
+            echo "ERROR: EC2_SSH_PRIVATE_KEY is empty"
+            exit 1
+          fi
+          
+          # Debug: Show length of key (safely)
+          echo "Key length: $(echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | wc -c)"
+          
+          # Write key file with explicit error checking
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_rsa || {
+            echo "Failed to decode base64 key"
+            exit 1
+          }
+          
+          # Debug: Check key file
+          if [ ! -s ~/.ssh/id_rsa ]; then
+            echo "ERROR: Key file is empty"
+            exit 1
+          fi
+          
           chmod 600 ~/.ssh/id_rsa
           ls -la ~/.ssh/id_rsa
+          
+          # Try to validate key format
+          ssh-keygen -l -f ~/.ssh/id_rsa || {
+            echo "Invalid key format"
+            exit 1
+          }
+          
           eval "$(ssh-agent -s)"
           ssh-add -v ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
