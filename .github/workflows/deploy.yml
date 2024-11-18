@@ -10,6 +10,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Log variables for troubleshooting
+        run: |
+          echo "The value of the variable is: ${{ secrets.EC2_HOST }}"
+          echo "The value of the variable is: ${{ secrets.EC2_USER }}"
+          echo "The value of the variable is: ${{ secrets.EC2_SSH_PRIVATE_KEY }}"
+
       # Step 1: Check out the code
       - name: Checkout code
         uses: actions/checkout@v3
