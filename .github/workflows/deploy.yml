@@ -28,20 +28,23 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
-      # Step 5: Deploy to EC2
+      # Step 5: Setup SSH
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          ssh-add -v ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # Step 6: Deploy to EC2
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.7
-        env:
-          DEBUG: 'true'  # Enable debugging for SSH connection
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            set -x  # Enable shell debugging to print executed commands
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} '
             cd /home/ubuntu/app
             git pull
             npm ci
             npm run build
             pm2 reload ecosystem.config.js --env production
+          '
