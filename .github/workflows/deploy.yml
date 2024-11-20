@@ -42,13 +42,14 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          printf -- "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa || echo "ssh-add failed"
+          ssh-add ~/.ssh/id_rsa || echo "Failed to add SSH key"
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-          ls -la ~/.ssh
-          ssh -v ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'echo "SSH connection test"'
+          # Debug SSH key
+          cat ~/.ssh/id_rsa | head -n 1
+          ls -la ~/.ssh/id_rsa
 
       # Step 6: Deploy to EC2
       - name: Deploy to EC2
