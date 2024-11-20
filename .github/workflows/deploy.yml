@@ -6,46 +6,39 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    environment: prod
 
     steps:
-      - name: Log variables for troubleshooting
-        run: |
-          echo "The value of the variable is: ${{ secrets.EC2_HOST }}"
-          echo "The value of the variable is: ${{ secrets.EC2_USER }}"
-          echo "The value of the variable is: ${{ secrets.EC2_SSH_PRIVATE_KEY }}"
-
-      # Step 1: Check out the code
+      # Step 1: Checkout Code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up SSH
-      - name: Set up SSH
-        run: |
-          mkdir -p ~/.ssh
-          # Write key directly (no base64 decode needed)
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          
-          # Debug: Check key format
-          echo "First line of key:"
-          head -n1 ~/.ssh/id_rsa
-          
-          eval "$(ssh-agent -s)"
-          ssh-add -v ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      # Step 2: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-      # Step 3: Deploy code to EC2
-      - name: Copy files to EC2
-        run: |
-          rsync -avz --delete ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/app
+      # Step 3: Install Dependencies
+      - name: Install dependencies
+        run: npm ci
 
-      # Step 4: Restart application
-      - name: Restart application
-        run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-          cd /home/${{ secrets.EC2_USER }}/app
-          ./restart.sh  # Adjust this command to your app's restart process
-          EOF
+      # Step 4: Run Build
+      - name: Build Next.js app
+        run: npm run build
+
+      # Step 5: Deploy to EC2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /path/to/app
+            git pull
+            npm ci
+            npm run build
+            pm2 reload ecosystem.config.js --env production
