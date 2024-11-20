@@ -14,6 +14,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Add AWS Credentials Configuration
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       # Step 2: Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -28,22 +36,16 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
-      # Step 4.5: Debug Environment Variables
-      - name: Print Environment Variables
-        run: |
-          echo "Printing all environment variables:"
-              printenv
-
       # Step 5: Setup SSH
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_rsa
+          printf -- "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
+          ssh-add ~/.ssh/id_rsa || echo "ssh-add failed"
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
           ls -la ~/.ssh
           ssh -v ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'echo "SSH connection test"'
