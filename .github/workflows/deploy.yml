@@ -39,7 +39,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            cd /path/to/app
+            set -x  # Enable shell debugging to print executed commands
+            cd /home/ubuntu/app
             git pull
             npm ci
             npm run build
