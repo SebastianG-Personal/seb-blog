@@ -28,6 +28,12 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
+      # Step 4.5: Debug Environment Variables
+      - name: Print Environment Variables
+        run: |
+          echo "Printing all environment variables:"
+              printenv
+
       # Step 5: Setup SSH
       - name: Configure SSH
         run: |
