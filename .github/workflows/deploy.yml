@@ -36,13 +36,11 @@ jobs:
 
       # Step 5: Setup SSH
       - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "Key content (first and last lines):"
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | sed 's/\\n/\n/g' | tr -d '\r' | (head -n 1 && tail -n 1)
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | sed 's/\\n/\n/g' | tr -d '\r' > ~/.ssh/id_rsa
-          echo "Key file content (first and last lines):"
-          cat ~/.ssh/id_rsa | (head -n 1 && tail -n 1)
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
