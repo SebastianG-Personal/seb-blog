@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  basePath: "/2048-in-react",
-  output: "export",
-  reactStrictMode: true,
+  experimental: {
+    appDir: true, // Ensures the app directory is enabled
+  },
 };
 
 export default nextConfig;
