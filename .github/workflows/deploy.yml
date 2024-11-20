@@ -51,10 +51,6 @@ jobs:
           SSH_USER: ${{ secrets.EC2_USER }}
         run: |
           echo "Starting SSH configuration..."
-          echo "SSH_HOST value exists: $([[ -n $SSH_HOST ]] && echo 'Yes' || echo 'No')"
-          echo "SSH_USER value exists: $([[ -n $SSH_USER ]] && echo 'Yes' || echo 'No')"
-          echo "SSH_PRIVATE_KEY length: ${#SSH_PRIVATE_KEY}"
-          
           mkdir -p ~/.ssh
           echo "Created .ssh directory"
           
