@@ -45,23 +45,9 @@ jobs:
 
       # Step 5: Setup SSH with detailed debugging
       - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          SSH_HOST: ${{ secrets.EC2_HOST }}
-          SSH_USER: ${{ secrets.EC2_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa || exit 1
-          
-          # Add host to known_hosts
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || {
-            echo "Failed to scan host key"
-            exit 1
-          }
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
       # Step 6: Deploy to EC2
       - name: Deploy to EC2
