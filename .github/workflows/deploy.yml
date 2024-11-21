@@ -58,15 +58,38 @@ jobs:
       # Step 6: Deploy to EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
+        env:
+          GITHUB_SSH_KEY: ${{ secrets.GH_SSH_PRIVATE_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
+            # Setup GitHub SSH key
+            mkdir -p ~/.ssh
+            echo "$GITHUB_SSH_KEY" > ~/.ssh/github_deploy
+            chmod 600 ~/.ssh/github_deploy
+            
+            # Configure SSH to use this key for GitHub
+            cat > ~/.ssh/config << EOF
+            Host github.com
+                HostName github.com
+                User git
+                IdentityFile ~/.ssh/github_deploy
+                StrictHostKeyChecking no
+            EOF
+            
+            # Add GitHub to known hosts
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            
+            # Start SSH agent and add key
+            eval "$(ssh-agent -s)"
+            ssh-add ~/.ssh/github_deploy
+            
+            # Test GitHub connection
+            ssh -T git@github.com || true
+            
+            # Proceed with git operations
             cd /home/ubuntu/app
-            # Debug: Show remote URL
-            git remote -v
             git remote set-url origin git@github.com:SebastianG-Personal/seb-blog.git
-            # Debug: Show new remote URL
-            git remote -v
             git pull
