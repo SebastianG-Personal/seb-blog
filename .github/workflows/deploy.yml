@@ -55,26 +55,13 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           
           eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
+          ssh-add ~/.ssh/id_rsa || exit 1
           
-          # Fail fast if host is not set
-          if [ -z "$SSH_HOST" ]; then
-            echo "Error: EC2_HOST is not set"
+          # Add host to known_hosts
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || {
+            echo "Failed to scan host key"
             exit 1
-          fi
-          
-          # Add host to known_hosts and verify
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-          if ! grep -q "$SSH_HOST" ~/.ssh/known_hosts; then
-            echo "Error: Failed to add host to known_hosts"
-            exit 1
-          fi
-          
-          # Test connection
-          if ! ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 "$SSH_USER@$SSH_HOST" exit; then
-            echo "Error: Failed to establish SSH connection"
-            exit 1
-          fi
+          }
 
       # Step 6: Deploy to EC2
       - name: Deploy to EC2
