@@ -66,6 +66,7 @@ jobs:
           
           echo "Connecting to $EC2_USER@$EC2_HOST..."
           ssh -o StrictHostKeyChecking=accept-new "$EC2_USER@$EC2_HOST" '
-            cd /home/ubuntu/app &&
+            cd /home/ubuntu/app
+            git remote set-url origin git@github.com:SebastianG-Personal/seb-blog.git &&
             git pull
           '
