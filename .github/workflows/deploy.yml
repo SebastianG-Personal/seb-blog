@@ -66,7 +66,12 @@ jobs:
           
           echo "Connecting to $EC2_USER@$EC2_HOST..."
           ssh -o StrictHostKeyChecking=accept-new "$EC2_USER@$EC2_HOST" '
-            cd /home/ubuntu/app
+            # Add GitHub to known hosts
+            mkdir -p ~/.ssh
+            ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts &&
+            
+            # Continue with deployment
+            cd /home/ubuntu/app &&
             git remote set-url origin git@github.com:SebastianG-Personal/seb-blog.git &&
             git pull
           '
