@@ -43,6 +43,28 @@ jobs:
       - name: Build Next.js app
         run: npm run build
 
+      # Add connection test before deployment
+      - name: Test SSH connection
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            echo "SSH connection successful"
+            whoami
+            pwd
+
+      # Then proceed with your existing deployment steps
+      - name: Transfer files to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          source: ".next,package.json,package-lock.json,public,next.config.js"
+          target: "/home/ubuntu/app"
+
       # Step 6: Deploy to EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
@@ -55,25 +77,15 @@ jobs:
             mkdir -p /home/ubuntu/app
             cd /home/ubuntu/app
 
-            # Configure git to use HTTPS instead of SSH
-            git config --global url."https://".insteadOf git://
-            git config --global url."https://github.com/".insteadOf git@github.com:
-            
-            # Set up remote repository URL with authentication
-            remote_repo="https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-            
-            # Initialize git if needed and update remote URL
-            if [ ! -d .git ]; then
-              git init
-              git remote add origin "$remote_repo"
-            else
-              git remote set-url origin "$remote_repo"
-            fi
-            
-            # Force clean and reset to ensure clean state
-            git fetch origin main
-            git reset --hard origin/main
-            
+            # Copy files from GitHub Actions runner to EC2
+            # You might want to add rsync or scp step here to transfer the built files
+
             # Install dependencies and rebuild
             npm ci
             npm run build
+
+            # Stop existing Next.js server if running (you may need to adjust this based on your process management)
+            pkill -f "next start" || true
+
+            # Start the Next.js server
+            next start
