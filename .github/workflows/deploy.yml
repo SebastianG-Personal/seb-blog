@@ -73,19 +73,23 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
-            # Ensure target directory exists and navigate to it
-            mkdir -p /home/ubuntu/app
+            # Navigate to app directory
             cd /home/ubuntu/app
 
-            # Copy files from GitHub Actions runner to EC2
-            # You might want to add rsync or scp step here to transfer the built files
-
-            # Install dependencies and rebuild
+            # Install dependencies
             npm ci
-            npm run build
-
-            # Stop existing Next.js server if running (you may need to adjust this based on your process management)
-            pkill -f "next start" || true
-
-            # Start the Next.js server
-            next start
+            
+            # Install PM2 globally if not already installed
+            npm install -g pm2
+            
+            # Stop existing instance if running
+            pm2 stop next-app || true
+            
+            # Start the Next.js app using PM2
+            pm2 start npm --name "next-app" -- start
+            
+            # Save the PM2 process list
+            pm2 save
+            
+            # Ensure PM2 starts on system reboot
+            pm2 startup
