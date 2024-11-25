@@ -57,13 +57,11 @@ jobs:
       # Step 7: Sync files to EC2
       - name: Sync files to EC2
         run: |
-          # Create SSH config for strict host key checking
+          # Create SSH directory
           mkdir -p ~/.ssh
-          echo "Host ec2
-            HostName ${{ secrets.EC2_HOST }}
-            User ${{ secrets.EC2_USER }}
-            IdentityFile ~/.ssh/ec2_key
-            StrictHostKeyChecking no" > ~/.ssh/config
+          
+          # Add EC2 host key to known hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
           
           # Save the SSH key
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/ec2_key
@@ -71,6 +69,7 @@ jobs:
           
           # Sync the built files to EC2
           rsync -avz --delete \
+            -e "ssh -i ~/.ssh/ec2_key" \
             .next \
             package.json \
             package-lock.json \
