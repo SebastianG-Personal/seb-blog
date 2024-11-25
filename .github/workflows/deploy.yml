@@ -62,7 +62,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          source: ".next,package.json,package-lock.json,public,next.config.js"
+          source: ".next,package.json,package-lock.json,public,next.config.ts"
           target: "/home/ubuntu/app"
 
       # Step 6: Deploy to EC2
