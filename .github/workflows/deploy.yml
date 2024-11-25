@@ -59,38 +59,37 @@ jobs:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_SSH_KEY: ${{ secrets.GH_SSH_PRIVATE_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          envs: GITHUB_TOKEN
           script: |
-            # Debug: Show current user and permissions
-            echo "Current user: $(whoami)"
-            echo "Groups: $(groups)"
-            echo "Working directory permissions:"
-            ls -la /home/ubuntu/app
+            # Setup GitHub SSH key
+            mkdir -p ~/.ssh
+            echo "$GITHUB_SSH_KEY" > ~/.ssh/github_deploy
+            chmod 600 ~/.ssh/github_deploy
+            
+            # Configure SSH to use this key for GitHub
+            cat > ~/.ssh/config << EOF
+            Host github.com
+                HostName github.com
+                User git
+                IdentityFile ~/.ssh/github_deploy
+                StrictHostKeyChecking no
+            EOF
+            
+            # Add GitHub to known hosts
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            
+            # Start SSH agent and add key
+            eval "$(ssh-agent -s)"
+            ssh-add ~/.ssh/github_deploy
+            
+            # Test GitHub connection
+            ssh -T git@github.com || true
+            
+            # Proceed with git operations
             cd /home/ubuntu/app
-            
-            # Configure git credentials
-            git config --global credential.helper store
-            echo "https://oauth2:${GITHUB_TOKEN}@github.com" > ~/.git-credentials
-            chmod 600 ~/.git-credentials
-            
-            # Configure git user
-            git config --global user.email "sebastiangrobelny15@gmail.com"
-            git config --global user.name "Sebastian Grobelny"
-            git config --global --add safe.directory /home/ubuntu/app
-            
-            # Update remote URL with oauth2 format
-            git remote remove origin
-            git remote add origin "https://oauth2:${GITHUB_TOKEN}@github.com/SebastianG-Personal/seb-blog.git"
-            
-            # Debug: Show new remote (with token masked)
-            echo "New remote configuration:"
-            git remote -v | sed "s/${GITHUB_TOKEN}/***/"
-            
-            # Pull changes
-            echo "Pulling changes..."
-            git pull origin main
+            git remote set-url origin git@github.com:SebastianG-Personal/seb-blog.git
+            git pull
