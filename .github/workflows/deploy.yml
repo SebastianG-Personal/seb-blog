@@ -66,6 +66,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           envs: GITHUB_TOKEN
           script: |
+            # Debug: Show current user and permissions
+            echo "Current user: $(whoami)"
+            echo "Groups: $(groups)"
+            echo "Working directory permissions:"
+            ls -la /home/ubuntu/app
             cd /home/ubuntu/app
             
             # Configure git credentials
