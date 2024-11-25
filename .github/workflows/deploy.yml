@@ -55,23 +55,25 @@ jobs:
             mkdir -p /home/ubuntu/app
             cd /home/ubuntu/app
 
-            # Configure git if not already done
-            git config --global credential.helper store
+            # Configure git to use HTTPS instead of SSH
+            git config --global url."https://".insteadOf git://
+            git config --global url."https://github.com/".insteadOf git@github.com:
             
             # Set up remote repository URL with authentication
             remote_repo="https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
             
-            # Initialize git if needed and set remote
+            # Initialize git if needed and update remote URL
             if [ ! -d .git ]; then
               git init
               git remote add origin "$remote_repo"
+            else
+              git remote set-url origin "$remote_repo"
             fi
             
-            # Fetch and checkout the latest code
+            # Force clean and reset to ensure clean state
             git fetch origin main
-            git checkout main
-            git pull origin main
-
+            git reset --hard origin/main
+            
             # Install dependencies and rebuild
             npm ci
             npm run build
