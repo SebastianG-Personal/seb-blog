@@ -58,34 +58,34 @@ jobs:
       # Step 6: Deploy to EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          envs: GITHUB_TOKEN
           script: |
             cd /home/ubuntu/app
             
-            # Debug: Show current remote
-            echo "Current remote:"
-            git remote -v
+            # Configure git credentials
+            git config --global credential.helper store
+            echo "https://oauth2:${GITHUB_TOKEN}@github.com" > ~/.git-credentials
+            chmod 600 ~/.git-credentials
             
-            # Remove and re-add remote with HTTPS
-            git remote remove origin
-            git remote add origin https://${{ secrets.GH_PAT }}@github.com/SebastianG-Personal/seb-blog.git
-            
-            # Debug: Show new remote
-            echo "New remote:"
-            git remote -v
-            
-            # Configure git
-            git config --global --add safe.directory /home/ubuntu/app
+            # Configure git user
             git config --global user.email "sebastiangrobelny15@gmail.com"
             git config --global user.name "Sebastian Grobelny"
+            git config --global --add safe.directory /home/ubuntu/app
             
-            # Try to fetch first
-            echo "Fetching..."
-            git fetch
+            # Update remote URL with oauth2 format
+            git remote remove origin
+            git remote add origin "https://oauth2:${GITHUB_TOKEN}@github.com/SebastianG-Personal/seb-blog.git"
             
-            # Then pull
-            echo "Pulling..."
+            # Debug: Show new remote (with token masked)
+            echo "New remote configuration:"
+            git remote -v | sed "s/${GITHUB_TOKEN}/***/"
+            
+            # Pull changes
+            echo "Pulling changes..."
             git pull origin main
