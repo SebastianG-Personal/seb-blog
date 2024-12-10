@@ -1,91 +1,30 @@
-name: Deploy to EC2
+name: Deploy Next.js application
 
 on:
   push:
     branches:
-      - main
+      - deploy-with-docker-ec2
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment: prod
+    steps: 
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Build docker image
+        run: docker build -t sgrobelny925/seb-personal .
+      - name: Login to docker hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Publish image to docker hub
+        run: docker push sgrobelny925/seb-personal:latest
 
+  deploy:
+    needs: build
+    runs-on: self-hosted
     steps:
-      # Step 1: Checkout Code
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Add AWS Credentials Configuration
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      # Add AWS Credentials Check
-      - name: Verify AWS Configuration
-        run: |
-          aws sts get-caller-identity || echo "AWS credentials not working"
-          echo "AWS Region set to: ${{ secrets.AWS_REGION }}"
-
-      # Step 2: Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      # Step 3: Install Dependencies
-      - name: Install dependencies
-        run: |
-          npm ci
-          npm install -g pm2
-
-      # Step 4: Run Build
-      - name: Build Next.js app
-        run: npm run build
-
-      # Add connection test before deployment
-      - name: Test SSH connection
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          script: |
-            echo "SSH connection successful"
-            whoami
-            pwd
-
-      # Then proceed with your existing deployment steps
-      - name: Transfer files to EC2
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          source: ".next,package.json,package-lock.json,public,next.config.ts"
-          target: "/home/ubuntu/app"
-
-      # Step 6: Deploy to EC2
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          script: |
-            # Navigate to app directory
-            cd /home/ubuntu/app
-            
-            # Stop existing instance if running
-            pm2 stop next-app || true
-            
-            # Start the Next.js app using PM2
-            pm2 start npm --name "next-app" -- start
-            
-            # Save the PM2 process list
-            pm2 save
-            
-            # Ensure PM2 starts on system reboot
-            pm2 startup
+      - name: Pull image from docker hub
+        run: docker pull sgrobelny925/seb-personal:latest
+      - name: Delete old container
+        run: docker rm -f seb-blog
+      - name: Run docker container
+        run: docker run -d -p 3000:3000 --name seb-blog sgrobelny925/seb-personal
