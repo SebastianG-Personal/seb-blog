@@ -12,7 +12,7 @@ export default function Home() {
           height={38}
           priority
         />
-      Hello this is Sebastian
+      Hello this is Sebastian and I am a Senior Engineering Director at Accolade.
       </main>
     </div>
   );
