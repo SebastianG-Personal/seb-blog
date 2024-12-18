@@ -62,7 +62,7 @@ jobs:
           # be deployed to ECS.
           docker buildx build \
             --platform linux/arm64 \
-            --tag ***.dkr.ecr.***.amazonaws.com/seb-blog:latest \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             --push .
 
       - name: Fill in the new image ID in the Amazon ECS task definition
